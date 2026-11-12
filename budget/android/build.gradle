@@ -8,18 +8,15 @@ allprojects {
 
 rootProject.buildDir = '../build'
 subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
     
 if (project.name == 'flutter_charset_detector_android') {
     project.pluginManager.withPlugin('com.android.library') {
-        def manifestFile = project.file('src/main/AndroidManifest.xml')
-        def manifestText = manifestFile.exists() ? manifestFile.getText('UTF-8') : ''
-        def packageMatch = manifestText =~ /package\s*=\s*["']([^"']+)["']/
-        if (!packageMatch.find()) {
-            throw new GradleException('Cannot determine flutter_charset_detector_android namespace')
+        project.extensions.getByName('android').compileOptions {
+            sourceCompatibility JavaVersion.VERSION_17
+            targetCompatibility JavaVersion.VERSION_17
         }
-        project.extensions.getByName('android').namespace = packageMatch.group(1)
     }
+}
 }
     
     project.evaluationDependsOn(':app')
