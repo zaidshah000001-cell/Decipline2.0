@@ -26,7 +26,7 @@ import 'package:sa3_liquid/sa3_liquid.dart';
 import 'package:budget/widgets/openContainerNavigation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
-bool premiumPopupEnabled = kIsWeb == false;
+bool premiumPopupEnabled = false;
 bool tryStoreEnabled = kIsWeb == false && kDebugMode == false;
 StreamSubscription<List<PurchaseDetails>>? purchaseListener;
 Map<String, ProductDetails> storeProducts = {};
@@ -1262,6 +1262,9 @@ class _FadeOutAndLockFeatureState extends State<FadeOutAndLockFeature> {
 
   @override
   Widget build(BuildContext context) {
+    if (const bool.fromEnvironment('DEMO_PREMIUM')) {
+      return widget.child;
+    }
     if (hidePremiumPopup() ||
         dismissedPremium ||
         widget.hasInitiallyDismissed) {
