@@ -17,7 +17,6 @@ if (project.name == 'flutter_charset_detector_android') {
         }
     }
 }
-}
     
     project.evaluationDependsOn(':app')
 }
