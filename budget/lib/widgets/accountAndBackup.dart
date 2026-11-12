@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:budget/colors.dart';
 import 'package:budget/database/generatePreviewData.dart';
 import 'package:budget/database/tables.dart';
-import 'package:budget/firebase_options.dart';
 import 'package:budget/functions.dart';
 import 'package:budget/main.dart';
 import 'package:budget/pages/aboutPage.dart';
@@ -36,7 +35,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:googleapis/gmail/v1.dart' as gMail;
-import 'package:google_sign_in/google_sign_in.dart' as signIn;
+import 'package:budget/struct/googleSignInStub.dart' as signIn;
 import 'package:http/http.dart' as http;
 import 'package:shimmer/shimmer.dart';
 import 'package:universal_html/html.dart' as html;
@@ -131,7 +130,6 @@ Future<bool> signInGoogle(
       ];
       googleSignIn = getPlatform() == PlatformOS.isIOS
           ? signIn.GoogleSignIn(
-              clientId: DefaultFirebaseOptions.currentPlatform.iosClientId,
               scopes: scopes)
           : signIn.GoogleSignIn.standard(scopes: scopes);
       // googleSignIn?.currentUser?.clearAuthCache();
