@@ -1,0 +1,108 @@
+String normalizeSpace(String s) => s.replaceAll(RegExp(r'[ \t\r\f\v]+'), ' ').replaceAll(RegExp(r'\n\s*'), '\n').trim();
+
+int? parseMinor(String s, {int digits = 2}) {
+  final cleaned = s.replaceAll(',', '');
+  final v = double.tryParse(cleaned);
+  if (v == null) return null;
+  var per = 1;
+  for (var i = 0; i < digits; i++) {
+    per *= 10;
+  }
+  return (v * per).round();
+}
+
+String titleCase(String s) => s
+    .split(RegExp(r'\s+'))
+    .where((w) => w.isNotEmpty)
+    .map((w) => _keepUpper(w.toUpperCase()) ? w.toUpperCase() : w[0].toUpperCase() + w.substring(1).toLowerCase())
+    .join(' ');
+
+bool _keepUpper(String w) => const {'ATM', 'UPI', 'EMI', 'KFC', 'PVR', 'IRCTC', 'BBPS', 'LIC', 'HP', 'BP'}.contains(w);
+
+final _merchantJunk = RegExp(
+  r'\b(pvt\.?|private|ltd\.?|limited|llp|inc\.?|(?<!\bof )india|technologies|tech|services|payments?|retail|'
+  r'online|com|www|vpa|upi|mr\.?|mrs\.?|ms\.?|umrn\s*[a-z0-9]*)\b',
+  caseSensitive: false,
+);
+
+const _months =
+    r'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|'
+    r'oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
+const _weekdays =
+    r'mon(?:day)?|tue(?:s(?:day)?)?|wed(?:nesday)?|thu(?:r(?:s(?:day)?)?)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?';
+
+final _dateLike = RegExp(
+  r'\b\d{1,2}(?:st|nd|rd|th)?[-/ .,]*(?:' +
+      _months +
+      r')\b\.?(?:[-/ ,.]*\d{2,4}\b)?' +
+      r'|\b(?:' +
+      _months +
+      r')\b\.?[-/ ]*\d{1,2}(?:st|nd|rd|th)?\b(?:,?[-/ ]*\d{2,4}\b)?' +
+      r'|\b\d{1,2}(?:' +
+      _months +
+      r')\d{2,4}\b' +
+      r'|\b\d{1,4}[-/.]\d{1,2}(?:[-/.]\d{2,4})?\b' +
+      r'|\b\d{1,2}:\d{2}(?::\d{2})?(?:\s*[ap]\.?m\b\.?)?',
+  caseSensitive: false,
+);
+
+final _calendarOnly = RegExp(
+  r'^(?:(?:' +
+      _months +
+      r'|' +
+      _weekdays +
+      r'|on|dated?|date|txn|transaction|the|of|for|refund(?:ed)?|reversal|reversed|am|pm|ist|hrs)\b[\s.,\-]*)+$',
+  caseSensitive: false,
+);
+
+bool isDateLike(String s) {
+  final stripped = s.replaceAll(_dateLike, ' ').replaceAll(RegExp(r'[\s.,:/\-]+'), ' ').trim();
+  return stripped.isEmpty || _calendarOnly.hasMatch(stripped);
+}
+
+String? cleanMerchant(String raw) {
+  var s = raw.trim();
+  if (s.contains('@')) return merchantFromVpa(s.split(RegExp(r'\s')).firstWhere((w) => w.contains('@')));
+  if (isDateLike(s)) return null;
+  s = s
+      .replaceAll(_dateLike, ' ')
+      .replaceAll(RegExp(r'[^A-Za-z0-9&\x27 .\-]'), ' ')
+      .replaceAll(_merchantJunk, ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .replaceAll(RegExp(r'^[\s.\-]+|[\s.\-]+$'), '')
+      .replaceAll(RegExp(r'\s+(?:on|dated?|dt)$', caseSensitive: false), '')
+      .trim();
+  if (s.length < 2) return null;
+  if (RegExp(r'^[\dXx*\s]+$').hasMatch(s)) return null;
+  if (s.length > 32) s = s.substring(0, 32).trim();
+  return titleCase(s);
+}
+
+String? merchantFromVpa(String vpa) {
+  final local = vpa.split('@').first;
+  final words = local
+      .replaceAll(RegExp(r'[._\-]+'), ' ')
+      .replaceAll(RegExp(r'\d+'), ' ')
+      .replaceAll(RegExp(r'\b(paytmqr|bharatpe|gpay|phonepe|mab|q|qr|merchant|pay|upi)\b', caseSensitive: false), ' ')
+      .trim();
+  if (words.length < 3) return null;
+  return titleCase(words);
+}
+
+const _brandAliases = <String, String>{
+  'bundl': 'swiggy', 'instamart': 'swiggy', 'eternal': 'zomato',
+  'grofers': 'blinkit', 'kiranakart': 'zepto', 'one97': 'paytm',
+  'roppen': 'rapido', 'bigtree': 'bookmyshow', 'olacabs': 'ola',
+  'amzn': 'amazon', 'decathlon': 'decathlon', 'avenue': 'dmart',
+};
+
+Set<String> merchantTokens(String? s) {
+  if (s == null) return <String>{};
+  final tokens = s
+      .toLowerCase()
+      .replaceAll(RegExp(r'@.*$'), '')
+      .split(RegExp(r'[^a-z0-9]+'))
+      .where((t) => t.length >= 3 && !RegExp(r'^\d+$').hasMatch(t))
+      .toSet();
+  return {...tokens, for (final t in tokens) ?_brandAliases[t]};
+}
